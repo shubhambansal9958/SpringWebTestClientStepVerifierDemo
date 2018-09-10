@@ -12,11 +12,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.reactive.server.FluxExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.server.HandlerFunction;
+import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
+import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import com.spring5.concept.learning.handler.UtilityHandler;
 import com.spring5.concept.learning.model.IntegerHolder;
 import com.spring5.concept.learning.model.StringHolder;
 import com.spring5.concept.learning.repository.UtilityRepository;
@@ -39,6 +42,9 @@ public class SpringWebFluxGradleMockitoApplicationTests {
 	
 	@Autowired
 	MathService mathService;
+	
+	@Autowired
+	UtilityHandler handler;
 	
 	@Autowired
 	RouterFunction<ServerResponse> router;
@@ -82,59 +88,38 @@ public class SpringWebFluxGradleMockitoApplicationTests {
 			.expectComplete()
 			.verify();
 	}
-
-//	@Test
-//	public void test_handler() {
-//
-//		// given
-//		String str = "I am a Testing sentence";
-//		Mono<String> mono = Mono.just(str);	
-//			
-//		HandlerFunction<ServerResponse> handlerFunction = handler::toUpperCase;
-//		RouterFunction<ServerResponse> routerFunction = req -> Mono.just(handlerFunction);	
-
-//		
-//		MockServerRequest request = MockServerRequest
-//				.builder()
-//				.method(HttpMethod.GET)
-//				.uri(URI.create("http://localhost:8080/utility/toUpperCase"))
-//				.build();
-//		
-//		Mono<HandlerFunction<ServerResponse>> result = routerFunction.route(request);
-//		
-//		// when
-//		//when(request.queryParam("index").get()).thenReturn("1");
-//		when(repository.getSentence(anyInt())).thenReturn(mono);
-//
-//		// then		
-//		StepVerifier.create(result)
-//			.expectNext(handlerFunction)
-//			.expectComplete().verify();
-
-//	HandlerFunction<ServerResponse> h = new HandlerFunction<ServerResponse>() {
-//
-//		@Override
-//		public Mono<ServerResponse> handle(ServerRequest request) {
-//			// TODO Auto-generated method stub
-//			return handler.toUpperCase(request);
-//		}
-//	};
-
-//	
-//	
-//	RouterFunction<ServerResponse> r = new RouterFunction<ServerResponse>() {
-//
-//		@Override
-//		public Mono<HandlerFunction<ServerResponse>> route(ServerRequest request) {
-//			// TODO Auto-generated method stub
-//			return Mono.just(h);
-//		}
-//	};
-
-//	HandlerFunction<ServerResponse> h = req -> handler.toUpperCase(req);
-//	RouterFunction<ServerResponse> r = req -> Mono.just(h);
-//
-//	}
+	
+	@Test
+	public void test_handler() {
+		
+		// given
+		String str = "I am a Testing sentence";
+		Mono<String> mono = Mono.just(str);
+		StringHolder holder = new StringHolder();
+		holder.setStr(str.toUpperCase());
+		
+		HandlerFunction<ServerResponse> handlerFunction = handler::toUpperCase;
+		RouterFunction<ServerResponse> routerFunction = RouterFunctions.route(RequestPredicates.GET(""), handlerFunction);
+		WebTestClient webTestClient = WebTestClient.bindToRouterFunction(routerFunction)
+										.build();
+		
+		// when
+		when(repository.getSentence(anyInt())).thenReturn(mono);
+		
+		//then
+		Flux<StringHolder> responseBody = webTestClient.get()
+			.uri(uriBuilder -> uriBuilder.path("").queryParam("index", "33").build())
+			.exchange()
+			.expectStatus().isOk()
+			.returnResult(StringHolder.class).getResponseBody()
+			;
+		
+		StepVerifier.create(responseBody)
+			.expectNext(holder)
+			.expectComplete()
+			.verify()
+			;
+	}
 
 	@Test
 	public void test_router() {
@@ -192,7 +177,7 @@ public class SpringWebFluxGradleMockitoApplicationTests {
 		WebTestClient webTestClient = WebTestClient.bindToServer()
 										.baseUrl("http://localhost:8080")
 										.build();
-		
+	
 		String uri = "/utility/getTokenizeSentence";
 		
 		//then
@@ -204,18 +189,12 @@ public class SpringWebFluxGradleMockitoApplicationTests {
 			;
 		
 		StepVerifier.create(response)
-				.expectNext(new StringHolder("This")) 
-				.expectNext(new StringHolder("outcome")) 
-				.expectNext(new StringHolder("is")) 
-				.expectNext(new StringHolder("result")) 
-				.expectNext(new StringHolder("of")) 
-				.expectNext(new StringHolder("work")) 
-				.expectNext(new StringHolder("done"))
-				.expectNext(new StringHolder("by"))
-				.expectNext(new StringHolder("Shubham"))
-				.expectComplete()
-				.verify()
-				;
+			.expectNextCount(9)
+			.expectComplete()
+			.verify()
+			;
+	
+	
 		
 		
 	}
