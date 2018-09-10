@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.reactive.server.FluxExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -182,6 +183,41 @@ public class SpringWebFluxGradleMockitoApplicationTests {
 			.exchange()
 			.expectStatus().isOk()
 			.expectBody(IntegerHolder.class).isEqualTo(holder);		
+	}
+	
+	@Test
+	public void test_server() {
+		
+		//given
+		WebTestClient webTestClient = WebTestClient.bindToServer()
+										.baseUrl("http://localhost:8080")
+										.build();
+		
+		String uri = "/utility/getTokenizeSentence";
+		
+		//then
+		Flux<StringHolder> response = webTestClient.get()
+			.uri(uriBuilder->uriBuilder.path(uri).queryParam("index", "1").build())
+			.exchange()
+			.expectStatus().isOk()
+			.returnResult(StringHolder.class).getResponseBody()
+			;
+		
+		StepVerifier.create(response)
+				.expectNext(new StringHolder("This")) 
+				.expectNext(new StringHolder("outcome")) 
+				.expectNext(new StringHolder("is")) 
+				.expectNext(new StringHolder("result")) 
+				.expectNext(new StringHolder("of")) 
+				.expectNext(new StringHolder("work")) 
+				.expectNext(new StringHolder("done"))
+				.expectNext(new StringHolder("by"))
+				.expectNext(new StringHolder("Shubham"))
+				.expectComplete()
+				.verify()
+				;
+		
+		
 	}
 
 }

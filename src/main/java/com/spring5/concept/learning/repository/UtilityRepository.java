@@ -10,7 +10,7 @@ public class UtilityRepository {
 	
 	Flux<String> sentences = Flux.just(
 			"I am a sentence come from utility repo",
-			"This outcome is result of wok done by Shubham",
+			"This outcome is result of work done by Shubham",
 			"You're accessing the Utility Repo"
 			);
 	
